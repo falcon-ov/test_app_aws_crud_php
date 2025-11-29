@@ -1,14 +1,22 @@
 <?php
-include 'config.php';
+require 'dynamodb.php';
 
-$id = 1; // id задачи для изменения
-$new_status = "completed";
+$data = json_decode(file_get_contents('php://input'), true);
+$todo_id = $data['todo_id'];
+$status = $data['status'];
 
-$sql = "UPDATE todos SET status='$new_status' WHERE id=$id";
-
-if ($write_db->query($sql) === TRUE) {
-    echo "Запись обновлена!";
-} else {
-    echo "Ошибка: " . $write_db->error;
+try {
+    $client->updateItem([
+        'TableName' => $tableName,
+        'Key' => [
+            'todo_id' => ['S' => $todo_id]
+        ],
+        'UpdateExpression' => 'SET #s = :val',
+        'ExpressionAttributeNames' => ['#s' => 'status'],
+        'ExpressionAttributeValues' => [':val' => ['S' => $status]]
+    ]);
+    echo json_encode(['success' => true]);
+} catch (Aws\DynamoDb\Exception\DynamoDbException $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

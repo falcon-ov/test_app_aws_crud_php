@@ -1,13 +1,18 @@
 <?php
-include 'config.php';
+require 'dynamodb.php';
 
-$id = 2; // id задачи для удаления
+$data = json_decode(file_get_contents('php://input'), true);
+$todo_id = $data['todo_id'];
 
-$sql = "DELETE FROM todos WHERE id=$id";
-
-if ($write_db->query($sql) === TRUE) {
-    echo "Запись удалена!";
-} else {
-    echo "Ошибка: " . $write_db->error;
+try {
+    $client->deleteItem([
+        'TableName' => $tableName,
+        'Key' => [
+            'todo_id' => ['S' => $todo_id]
+        ]
+    ]);
+    echo json_encode(['success' => true]);
+} catch (Aws\DynamoDb\Exception\DynamoDbException $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
